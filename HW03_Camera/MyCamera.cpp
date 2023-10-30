@@ -3,43 +3,58 @@ using namespace BTX;
 //  MyCamera
 void MyCamera::SetPositionTargetAndUpward(vector3 a_v3Position, vector3 a_v3Target, vector3 a_v3Upward)
 {
-	//TODO:: replace the super call with your functionality
-	//Tip: Changing any positional vector forces you to calculate new directional ones
-	super::SetPositionTargetAndUpward(a_v3Position, a_v3Target, a_v3Upward);
+	//Sets the postion and target of the camrea
+	m_v3Position = a_v3Position;
+	m_v3Target = a_v3Target;
 
-	//After changing any vectors you need to recalculate the MyCamera View matrix.
-	//While this is executed within the parent call above, when you remove that line
-	//you will still need to call it at the end of this method
+	//Recalculates the MyCamera View matrix.
 	CalculateView();
 }
 void MyCamera::MoveForward(float a_fDistance)
 {
-	//Tips:: Moving will modify both positional and directional vectors,
-	//		 here we only modify the positional.
-	//       The code below "works" because we wrongly assume the forward 
-	//		 vector is going in the global -Z but if you look at the demo 
-	//		 in the _Binary folder you will notice that we are moving 
-	//		 backwards and we never get closer to the plane as we should 
-	//		 because as we are looking directly at it.
+	//Allows the player to move foward in the screen
 	m_v3Position += vector3(0.0f, 0.0f, a_fDistance);
 	m_v3Target += vector3(0.0f, 0.0f, a_fDistance);
 }
 void MyCamera::MoveVertical(float a_fDistance)
 {
-	//Tip:: Look at MoveForward
+	//Allows the user to love using the A and D screen
+	m_v3Position += vector3(0.0f, a_fDistance, 0.0f);
+	m_v3Target += vector3(0.0f, a_fDistance, 0.0f);
 }
 void MyCamera::MoveSideways(float a_fDistance)
 {
-	//Tip:: Look at MoveForward
+	//Allows the player to move diagonal when 2 buttons are pressed at the same time
+	//Ex: W and D will make you go at a diagonal from the left and up 
+	m_v3Position += vector3(a_fDistance, 0.0f, a_fDistance);
+	m_v3Target += vector3(a_fDistance, 0.0f, a_fDistance);
 }
 void MyCamera::CalculateView(void)
 {
-	//Tips:: Directional vectors will be affected by the orientation in the quaternion
-	//		 After calculating any new vector one needs to update the View Matrix
-	//		 Camera rotation should be calculated out of the m_v3PitchYawRoll member
-	//		 it will receive information from the main code on how much these orientations
-	//		 have change so you only need to focus on the directional and positional 
-	//		 vectors. There is no need to calculate any right click process or connections.
+	//Calculate the current angle
+	float pitchAngle = asin(sin(m_v3PitchYawRoll.x));
+
+	//Lock Up and Down
+	if (pitchAngle > glm::radians(89.0f))
+	{
+		pitchAngle = glm::radians(89.0f);
+	}
+	else if (pitchAngle < glm::radians(-89.0f))
+	{
+		pitchAngle = glm::radians(-89.0f);
+	}
+	m_v3PitchYawRoll.x = pitchAngle;
+
+	//Calculate Rotation
+	glm::vec3 forwardVector;
+	forwardVector.y = sin(m_v3PitchYawRoll.x);
+	forwardVector.x = sin(m_v3PitchYawRoll.y) * cos(m_v3PitchYawRoll.x);
+	forwardVector.z = cos(m_v3PitchYawRoll.x) * cos(m_v3PitchYawRoll.y);
+
+	//Set new view
+	glm::vec3 newTarget = m_v3Position + forwardVector;
+	m_v3Target = newTarget;
+
 	m_m4View = glm::lookAt(m_v3Position, m_v3Target, m_v3Upward);
 }
 //You can assume that the code below does not need changes unless you expand the functionality

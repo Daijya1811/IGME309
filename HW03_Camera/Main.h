@@ -1,6 +1,6 @@
 /*----------------------------------------------
-Programmer: Alberto Bobadilla (labigm@rit.edu)
-Date: 2021/02
+Programmer: Daijya Robinson (dsr1811@rit.edu)
+Date: 2023/29
 ----------------------------------------------*/
 #ifndef __MAIN_H_
 #define __MAIN_H_

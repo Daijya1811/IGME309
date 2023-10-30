@@ -1,7 +1,7 @@
 /*----------------------------------------------
-Programmer: Alberto Bobadilla (labigm@rit.edu)
-Date: 2021/02
-Update: 2021/02
+Programmer: Daijya Robinson (dsr1811@rit.edu)
+Date: 2023/29
+Update: 2023/29
 ----------------------------------------------*/
 #ifndef __MYCAMERACLASS_H_
 #define __MYCAMERACLASS_H_

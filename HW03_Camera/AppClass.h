@@ -1,7 +1,7 @@
 /*----------------------------------------------
-Programmer: Alberto Bobadilla (labigm@rit.edu)
-Date: 2021/02
-Update: 2021/02
+Programmer: Daijya Robinson (dsr1811@rit.edu)
+Date: 2023/29
+Update: 2023/29
 ----------------------------------------------*/
 #ifndef __APPLICATIONCLASS_H_
 #define __APPLICATIONCLASS_H_
@@ -22,7 +22,7 @@ class Application
 {
 	MyCamera* m_pCamera = nullptr;
 private:
-	String m_sProgrammer = "Alberto Bobadilla - labigm@rit.edu";
+	String m_sProgrammer = "Daijya Robinson - dsr1811@rit.edu";
 	static ImGuiObject gui; //GUI object
 
 	uint m_uRenderCallCount = 0; //count of render calls per frame
