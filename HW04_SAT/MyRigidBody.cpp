@@ -3,42 +3,173 @@ using namespace BTX;
 //Allocation
 uint MyRigidBody::SAT(MyRigidBody* const a_pOther)
 {
-	//TODO: Calculate the SAT algorithm I STRONGLY suggest you use the
-	//Real Time Collision detection algorithm for OBB here but feel free to
-	//implement your own solution.
+	//Varibles used to hold values
+	vector3 centerPointOther = a_pOther->GetCenterGlobal();
+	vector3 centerPointThis = this->GetCenterGlobal();
+	vector3 halfWidthPointOther = a_pOther->m_v3HalfWidth;
+	vector3 halfWidthPointThis = this->m_v3HalfWidth;
+	float radiusThis;
+	float radiusOther;
+	matrix3 rotation;
+	matrix3 absoluteRotation;
+
+	// Compute rotation matrix expressing b in a’s coordinate frame
+	for (uint i = 0; i < 3; i++) {
+		for (uint j = 0; j < 3; j++) 
+		{
+			rotation[i][j] = glm::dot(this->m_m4ToWorld[i], a_pOther->m_m4ToWorld[j]);
+		}
+	}
+
+	//Saves the new traslation
+	vector3 position1 = this->m_m4ToWorld[0];
+	vector3 position2 = this->m_m4ToWorld[1];
+	vector3 position3 = this->m_m4ToWorld[2];
+
+	// Compute translation vector translation
+	vector3 translation = centerPointOther - centerPointThis;
+
+	// Bring translation into a’s coordinate frame
+	translation = vector3(glm::dot(translation, position1), glm::dot(translation, position2), glm::dot(translation, position3));
+	
+	// Compute common subexpressions. Add in an epsilon term to
+	// counteract arithmetic errors when two edges are parallel and
+	// their cross product is (near) null (see text for details)
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			absoluteRotation[i][j] = glm::abs(rotation[i][j]) + glm::epsilon<float>();
+		}
+	}
+
+	// Test axes L = A0, L = A1, L = A2
+	for (int i = 0; i < 3; i++) {
+		radiusThis = halfWidthPointThis[i];
+		radiusOther = halfWidthPointOther[0] * absoluteRotation[i][0] + halfWidthPointOther[1] * absoluteRotation[i][1] + halfWidthPointOther[2] * absoluteRotation[i][2];
+		if (glm::abs(translation[i]) > radiusThis + radiusOther)
+		{
+			return BTXs::eSATResults::SAT_AX;
+		}
+	}
+
+	// Test axes L = B0, L = B1, L = B2
+	for (int i = 0; i < 3; i++) {
+		radiusThis = halfWidthPointThis[0] * absoluteRotation[i][0] + halfWidthPointThis[1] * absoluteRotation[1][i] + halfWidthPointThis[2] * absoluteRotation[2][i];
+		radiusOther = halfWidthPointOther[i];
+		if (glm::abs(translation[0] * rotation[0][i] + translation[1] * rotation[1][i]) > radiusThis + radiusOther)
+		{
+			return BTXs::eSATResults::SAT_BX;
+		}
+	}
+	 
+	// Test axis L = A0 x B0
+	radiusThis = halfWidthPointThis[1] * absoluteRotation[2][0] + halfWidthPointThis[2] * absoluteRotation[1][0];
+	radiusOther = halfWidthPointOther[1] * absoluteRotation[0][2] + halfWidthPointOther[2] * absoluteRotation[0][1];
+	if (glm::abs(translation[2] * rotation[1][0] - translation[1] * rotation[2][0]) > radiusThis + radiusOther)
+	{
+		return BTXs::eSATResults::SAT_AXxBX;
+	}
+
+	// Test axis L = A0 x B1
+	radiusThis = halfWidthPointThis[1] * absoluteRotation[2][1] + halfWidthPointThis[2] * absoluteRotation[1][1];
+	radiusOther = halfWidthPointOther[0] * absoluteRotation[0][2] + halfWidthPointOther[2] * absoluteRotation[0][0];
+	if (glm::abs(translation[2] * rotation[1][1] - translation[1] * rotation[2][1]) > radiusThis + radiusOther)
+	{
+		return BTXs::eSATResults::SAT_AXxBY;
+	}
+
+	// Test axis L = A0 x B2
+	radiusThis = halfWidthPointThis[1] * absoluteRotation[2][2] + halfWidthPointThis[2] * absoluteRotation[1][2];
+	radiusOther = halfWidthPointOther[0] * absoluteRotation[0][1] + halfWidthPointOther[1] * absoluteRotation[0][0];
+	if (glm::abs(translation[2] * rotation[1][2] - translation[1] * rotation[2][2]) > radiusThis + radiusOther)
+	{
+		return BTXs::eSATResults::SAT_AXxBZ;
+	}
+
+	// Test axis L = A1 x B0
+	radiusThis = halfWidthPointThis[0] * absoluteRotation[2][0] + halfWidthPointThis[2] * absoluteRotation[0][0];
+	radiusOther = halfWidthPointOther[1] * absoluteRotation[1][2] + halfWidthPointOther[2] * absoluteRotation[1][1];
+	if (glm::abs(translation[0] * rotation[2][0] - translation[2] * rotation[0][0]) > radiusThis + radiusOther)
+	{
+		return BTXs::eSATResults::SAT_AYxBX;
+	}
+
+	// Test axis L = A1 x B1
+	radiusThis = halfWidthPointThis[0] * absoluteRotation[2][1] + halfWidthPointThis[2] * absoluteRotation[0][1];
+	radiusOther = halfWidthPointOther[0] * absoluteRotation[1][2] + halfWidthPointOther[2] * absoluteRotation[1][0];
+	if (glm::abs(translation[0] * rotation[2][1] - translation[2] * rotation[0][1]) > radiusThis + radiusOther)
+	{
+		return BTXs::eSATResults::SAT_AYxBY;
+	}
+
+	// Test axis L = A1 x B2
+	radiusThis = halfWidthPointThis[0] * absoluteRotation[2][2] + halfWidthPointThis[2] * absoluteRotation[0][2];
+	radiusOther = halfWidthPointOther[0] * absoluteRotation[1][1] + halfWidthPointOther[1] * absoluteRotation[1][0];
+	if (glm::abs(translation[0] * rotation[2][2] - translation[2] * rotation[0][2]) > radiusThis + radiusOther)
+	{
+		return BTXs::eSATResults::SAT_AYxBZ;
+	}
+
+	// Test axis L = A2 x B0
+	radiusThis = halfWidthPointThis[0] * absoluteRotation[1][0] + halfWidthPointThis[1] * absoluteRotation[0][0];
+	radiusOther = halfWidthPointOther[1] * absoluteRotation[2][2] + halfWidthPointOther[2] * absoluteRotation[2][1];
+	if (glm::abs(translation[1] * rotation[0][0] - translation[0] * rotation[1][0]) > radiusThis + radiusOther)
+	{
+		return BTXs::eSATResults::SAT_AZxBX;
+	}
+
+	// Test axis L = A2 x B1
+	radiusThis = halfWidthPointThis[0] * absoluteRotation[1][1] + halfWidthPointThis[1] * absoluteRotation[0][1];
+	radiusOther = halfWidthPointOther[0] * absoluteRotation[2][2] + halfWidthPointOther[2] * absoluteRotation[2][0];
+	if (glm::abs(translation[1] * rotation[0][1] - translation[0] * rotation[1][1]) > radiusThis + radiusOther)
+	{
+		return BTXs::eSATResults::SAT_AZxBY;
+	}
+
+	// Test axis L = A2 x B2
+	radiusThis = halfWidthPointThis[0] * absoluteRotation[1][2] + halfWidthPointThis[1] * absoluteRotation[0][2];
+	radiusOther = halfWidthPointOther[0] * absoluteRotation[2][1] + halfWidthPointOther[1] * absoluteRotation[2][0];
+	if (glm::abs(translation[1] * rotation[0][2] - translation[0] * rotation[1][2]) > radiusThis + radiusOther)
+	{
+		return BTXs::eSATResults::SAT_AZxBZ;
+	}
+
 	return BTXs::eSATResults::SAT_NONE;
 }
 bool MyRigidBody::IsColliding(MyRigidBody* const a_pOther)
 {
-	//check if spheres are colliding
+	// check if spheres are colliding
 	bool bColliding = true;
 	/*
 	* We use Bounding Spheres or ARBB as a pre-test to avoid expensive calculations (SAT)
 	* we default bColliding to true here to always fall in the need of calculating
 	* SAT for the sake of the assignment.
 	*/
-	if (bColliding) //they are colliding with bounding sphere
+	if (bColliding) // they are colliding with bounding sphere
 	{
 		uint nResult = SAT(a_pOther);
+		// If SAT isn't 0 then set bColliding to false
+		if (nResult != 0)
+		{
+			bColliding = false;
+		}
 
-		if (bColliding) //The SAT shown they are colliding
+		if (bColliding) // The SAT shown they are colliding
 		{
 			this->AddCollisionWith(a_pOther);
 			a_pOther->AddCollisionWith(this);
 		}
-		else //they are not colliding
-		{
-			this->RemoveCollisionWith(a_pOther);
-			a_pOther->RemoveCollisionWith(this);
-		}
 	}
-	else //they are not colliding with bounding sphere
+
+	// Regardless of whether bounding spheres are colliding or not, remove collisions if they were previously colliding
+	if (!bColliding)
 	{
 		this->RemoveCollisionWith(a_pOther);
 		a_pOther->RemoveCollisionWith(this);
 	}
+
 	return bColliding;
 }
+
 void MyRigidBody::Init(void)
 {
 	m_pModelMngr = ModelManager::GetInstance();
