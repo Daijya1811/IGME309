@@ -3,7 +3,9 @@ using namespace BTX;
 //  MyCamera
 void MyCamera::SetPositionTargetAndUpward(vector3 a_v3Position, vector3 a_v3Target, vector3 a_v3Upward)
 {
-	super::SetPositionTargetAndUpward(a_v3Position, a_v3Target, a_v3Upward);
+	//Sets the postion and target of the camrea
+	m_v3Position = a_v3Position;
+	m_v3Target = a_v3Target;
 
 	//Recalculates the MyCamera View matrix.
 	CalculateView();
@@ -11,33 +13,47 @@ void MyCamera::SetPositionTargetAndUpward(vector3 a_v3Position, vector3 a_v3Targ
 void MyCamera::MoveForward(float a_fDistance)
 {
 	//Allows the player to move foward in the screen
-	m_v3Position += m_v3Forward * a_fDistance;
-	m_v3Target += m_v3Forward * a_fDistance;
+	m_v3Position += vector3(0.0f, 0.0f, a_fDistance);
+	m_v3Target += vector3(0.0f, 0.0f, a_fDistance);
 }
 void MyCamera::MoveVertical(float a_fDistance)
 {
 	//Allows the user to love using the A and D screen
-	m_v3Position += m_v3Upward * a_fDistance;
-	m_v3Target += m_v3Upward * a_fDistance;
-	m_v3Above += m_v3Upward * a_fDistance;
+	m_v3Position += vector3(0.0f, a_fDistance, 0.0f);
+	m_v3Target += vector3(0.0f, a_fDistance, 0.0f);
 }
 void MyCamera::MoveSideways(float a_fDistance)
 {
 	//Allows the player to move diagonal when 2 buttons are pressed at the same time
 	//Ex: W and D will make you go at a diagonal from the left and up 
-	m_v3Position += m_v3Rightward * a_fDistance;
-	m_v3Target += m_v3Rightward * a_fDistance;
+	m_v3Position += vector3(a_fDistance, 0.0f, a_fDistance);
+	m_v3Target += vector3(a_fDistance, 0.0f, a_fDistance);
 }
 void MyCamera::CalculateView(void)
 {
-	quaternion quaterionY = glm::angleAxis(m_v3PitchYawRoll.y, m_v3Upward);
-	quaternion quaterionX = glm::angleAxis(m_v3PitchYawRoll.x, m_v3Rightward);
-	m_v3PitchYawRoll = vector3();
-	quaternion qOrientation = quaterionY * quaterionY;
-	m_v3Forward = glm::rotate(qOrientation, m_v3Forward);
-	m_v3Rightward = glm::rotate(qOrientation, m_v3Forward);
+	//Calculate the current angle
+	float pitchAngle = asin(sin(m_v3PitchYawRoll.x));
 
-	m_v3Target = m_v3Position + m_v3Forward;
+	//Lock Up and Down
+	if (pitchAngle > glm::radians(89.0f))
+	{
+		pitchAngle = glm::radians(89.0f);
+	}
+	else if (pitchAngle < glm::radians(-89.0f))
+	{
+		pitchAngle = glm::radians(-89.0f);
+	}
+	m_v3PitchYawRoll.x = pitchAngle;
+
+	//Calculate Rotation
+	glm::vec3 forwardVector;
+	forwardVector.y = sin(m_v3PitchYawRoll.x);
+	forwardVector.x = sin(m_v3PitchYawRoll.y) * cos(m_v3PitchYawRoll.x);
+	forwardVector.z = cos(m_v3PitchYawRoll.x) * cos(m_v3PitchYawRoll.y);
+
+	//Set new view
+	glm::vec3 newTarget = m_v3Position + forwardVector;
+	m_v3Target = newTarget;
 
 	m_m4View = glm::lookAt(m_v3Position, m_v3Target, m_v3Upward);
 }
